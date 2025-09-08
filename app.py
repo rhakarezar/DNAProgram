@@ -2,9 +2,10 @@ import streamlit as st
 import qrcode
 from io import BytesIO
 from PIL import Image
-from pyzbar.pyzbar import decode
 import geocoder
 import random, string
+import numpy as np
+import cv2
 
 # Mapping
 binary_to_dna = {"00":"A","01":"T","10":"G","11":"C"}
@@ -96,12 +97,19 @@ elif menu == "QR Maker":
 
     uploaded = st.file_uploader("Upload QR untuk decode", type=["png","jpg","jpeg"])
     if uploaded:
-        img = Image.open(uploaded)
-        decoded = decode(img)
-        if decoded:
-            dna = decoded[0].data.decode("utf-8")
-            teks = dna_to_text(dna)
-            st.success(f"DNA: {dna}")
-            st.info(f"Pesan + Lokasi: {teks}")
+        file_bytes = np.asarray(bytearray(uploaded.read()), dtype=np.uint8)
+        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+
+        detector = cv2.QRCodeDetector()
+        data, bbox, _ = detector.detectAndDecode(img)
+
+        if data:
+            dna = data
+            try:
+                teks = dna_to_text(dna)
+                st.success(f"DNA: {dna}")
+                st.info(f"Pesan + Lokasi: {teks}")
+            except:
+                st.error("DNA tidak valid atau tidak bisa didecode!")
         else:
             st.error("QR tidak bisa dibaca!")
