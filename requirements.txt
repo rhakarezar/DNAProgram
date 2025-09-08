@@ -1,5 +1,6 @@
 streamlit
 qrcode
 pillow
-pyzbar
+opencv-python-headless
 geocoder
+numpy
