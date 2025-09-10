@@ -135,7 +135,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.email = None
 
-st.title("🧬 CamouGene")
+st.title("🧬 CamouGene : DNA Code Based Obfucation System")
 
 # --- Sidebar Menu ---
 if st.session_state.logged_in:
@@ -243,3 +243,4 @@ if st.session_state.logged_in:
             st.success(msg)
         else:
             st.error(msg)
+
