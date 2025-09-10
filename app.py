@@ -84,36 +84,17 @@ def send_sos(sender_email):
         return False, "Konfigurasi SOS atau SMTP belum lengkap!"
 
     try:
-        # 1. Buat pesan darurat + lokasi
-        g = geocoder.ip('me')
-        lokasi = f"LAT:{g.latlng[0]},LON:{g.latlng[1]}" if g.ok else "LAT:0,LON:0"
-        pesan = f"🚨 SOS! Saya membutuhkan bantuan segera! | {lokasi}"
-
-        # 2. Encode ke DNA
-        dna_pesan = text_to_dna(pesan)
-
-        # 3. Generate QR dari DNA
-        qr = qrcode.make(dna_pesan)
-        buf = BytesIO()
-        qr.save(buf, format="PNG")
-        buf.seek(0)
-
-        # 4. Buat email
         msg = EmailMessage()
         msg["Subject"] = "🚨 SOS Alert!"
         msg["From"] = smtp_user
         msg["To"] = sos_email
-        msg.set_content(f"Pesan darurat:\n{pesan}\n\nDNA Encoded:\n{dna_pesan}")
+        msg.set_content("Pesan darurat: Saya membutuhkan bantuan segera!")
 
-        # 5. Attach QR
-        msg.add_attachment(buf.getvalue(), maintype="image", subtype="png", filename="sos_qr.png")
-
-        # 6. Kirim via SMTP
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(smtp_user, smtp_pass)
             server.send_message(msg)
 
-        return True, f"SOS berhasil dikirim ke {sos_email} dengan QR darurat!"
+        return True, f"SOS berhasil dikirim ke {sos_email}"
     except Exception as e:
         return False, str(e)
 
@@ -246,41 +227,19 @@ elif st.session_state.logged_in:
 
 # --- Floating SOS Button ---
 if st.session_state.logged_in:
-    sos_clicked = st.button("🚨 SOS", key="floating_sos_button")
-    if sos_clicked:
-        ok, result = send_sos(st.session_state.email)
-
-        if ok:
-            # kalau result berupa tuple (pesan, img)
-            if isinstance(result, tuple):
-                msg, img = result
-                st.success(msg)
-                st.image(img, caption="QR Darurat", use_column_width=True)
-            else:
-                st.success(result)
-        else:
-            st.error(result)
-
-    # CSS styling khusus SOS
     st.markdown("""
-        <style>
-        div[data-testid="stButton"][id*="floating_sos_button"] button {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background-color: #FF3C3C;
-            color: white;
-            font-weight: bold;
-            border-radius: 10px;
-            padding: 15px 25px;
-            z-index: 999;
-        }
-        </style>
+    <a href="#" onclick="document.getElementById('send_sos').click()" 
+       style="position: fixed; bottom: 30px; right: 30px; background-color: #FF3C3C; color: white; 
+       padding: 15px 25px; border-radius: 10px; font-weight: bold; z-index: 999; text-decoration:none;">
+       🚨 SOS
+    </a>
     """, unsafe_allow_html=True)
 
-
-
-
-
-
-
+# --- Hidden Send SOS Button ---
+if st.session_state.logged_in:
+    if st.button("Send SOS", key="send_sos"):
+        ok, msg = send_sos(st.session_state.email)
+        if ok:
+            st.success(msg)
+        else:
+            st.error(msg)
