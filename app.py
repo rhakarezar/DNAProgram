@@ -244,23 +244,33 @@ elif st.session_state.logged_in:
             update_smtp_config(st.session_state.email, smtp_server, smtp_port, smtp_user, smtp_pass)
             st.success("Konfigurasi SMTP berhasil disimpan!")
 
-# --- Floating SOS Button ---
+# --- Floating SOS Button (Fix) ---
 if st.session_state.logged_in:
-    st.markdown("""
-    <a href="#" onclick="document.getElementById('send_sos').click()" 
-       style="position: fixed; bottom: 30px; right: 30px; background-color: #FF3C3C; color: white; 
-       padding: 15px 25px; border-radius: 10px; font-weight: bold; z-index: 999; text-decoration:none;">
-       🚨 SOS
-    </a>
-    """, unsafe_allow_html=True)
-
-# --- Hidden Send SOS Button ---
-if st.session_state.logged_in:
-    if st.button("Send SOS", key="send_sos"):
+    sos_clicked = st.button("🚨 SOS", key="sos_main")
+    if sos_clicked:
         ok, msg = send_sos(st.session_state.email)
         if ok:
             st.success(msg)
         else:
             st.error(msg)
+
+    # CSS styling biar ngambang kanan bawah
+    st.markdown("""
+        <style>
+        div[data-testid="stButton"] button[kind="secondary"] {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #FF3C3C;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px;
+            padding: 15px 25px;
+            z-index: 999;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+
 
 
