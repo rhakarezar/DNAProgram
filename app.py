@@ -135,7 +135,7 @@ def generate_password(length=12):
 init_db()
 
 # --- UI ---
-st.title("🧬 DNA Encoder/Decoder + QR + SOS System")
+st.title("🧬 CamouGene : Gene Codes System for Emergency")
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -237,3 +237,4 @@ elif menu == "App":
                     st.success(msg)
                 else:
                     st.error(msg)
+
