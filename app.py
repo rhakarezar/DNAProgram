@@ -7,6 +7,8 @@ import random, string
 import numpy as np
 import cv2
 import sqlite3
+import smtplib
+from email.message import EmailMessage
 
 # --- Database Setup ---
 def init_db():
@@ -16,7 +18,11 @@ def init_db():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     email TEXT UNIQUE NOT NULL,
                     password TEXT NOT NULL,
-                    sos_email TEXT)''')
+                    sos_email TEXT,
+                    smtp_server TEXT,
+                    smtp_port INTEGER,
+                    smtp_user TEXT,
+                    smtp_pass TEXT)''')
     conn.commit()
     conn.close()
 
@@ -55,6 +61,44 @@ def get_sos_email(email):
     conn.close()
     return result[0] if result else None
 
+def update_smtp_config(email, server, port, user, password):
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+    c.execute("UPDATE users SET smtp_server=?, smtp_port=?, smtp_user=?, smtp_pass=? WHERE email=?",
+              (server, port, user, password, email))
+    conn.commit()
+    conn.close()
+
+def get_smtp_config(email):
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+    c.execute("SELECT smtp_server, smtp_port, smtp_user, smtp_pass FROM users WHERE email=?", (email,))
+    result = c.fetchone()
+    conn.close()
+    return result if result else (None, None, None, None)
+
+def send_sos(sender_email):
+    sos_email = get_sos_email(sender_email)
+    smtp_server, smtp_port, smtp_user, smtp_pass = get_smtp_config(sender_email)
+
+    if not sos_email or not smtp_server or not smtp_port or not smtp_user or not smtp_pass:
+        return False, "Konfigurasi SOS atau SMTP belum lengkap!"
+
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = "🚨 SOS Alert!"
+        msg["From"] = smtp_user
+        msg["To"] = sos_email
+        msg.set_content("Pesan darurat: Saya membutuhkan bantuan segera!")
+
+        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+
+        return True, f"SOS berhasil dikirim ke {sos_email}"
+    except Exception as e:
+        return False, str(e)
+
 
 # --- DNA Mapping ---
 binary_to_dna = {"00":"A","01":"T","10":"G","11":"C"}
@@ -87,11 +131,11 @@ def generate_password(length=12):
     return password, dna_seq
 
 
-# --- Init Database ---
+# --- Init DB ---
 init_db()
 
 # --- UI ---
-st.title("🧬 DNA Encoder/Decoder + QR Generator + Login System")
+st.title("🧬 DNA Encoder/Decoder + QR + SOS System")
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -135,8 +179,7 @@ elif menu == "App":
             st.session_state.email = None
             st.experimental_rerun()
 
-        # Submenu dalam aplikasi
-        sub_menu = st.radio("Pilih Menu", ["Encode/Decode DNA", "QR Maker", "SOS Settings"])
+        sub_menu = st.radio("Pilih Menu", ["Encode/Decode DNA", "QR Maker", "SOS Settings", "Configure", "Send SOS"])
 
         if sub_menu == "Encode/Decode DNA":
             teks = st.text_input("Masukkan teks atau DNA sequence:")
@@ -175,3 +218,22 @@ elif menu == "App":
             if st.button("Update Email SOS"):
                 update_sos_email(st.session_state.email, sos_email)
                 st.success("Email SOS berhasil diperbarui!")
+
+        elif sub_menu == "Configure":
+            st.subheader("Konfigurasi SMTP")
+            smtp_server = st.text_input("SMTP Server (contoh: smtp.gmail.com)")
+            smtp_port = st.number_input("SMTP Port (contoh: 465)", value=465)
+            smtp_user = st.text_input("SMTP User (email pengirim)")
+            smtp_pass = st.text_input("SMTP App Password", type="password")
+            if st.button("Simpan Konfigurasi"):
+                update_smtp_config(st.session_state.email, smtp_server, smtp_port, smtp_user, smtp_pass)
+                st.success("Konfigurasi SMTP berhasil disimpan!")
+
+        elif sub_menu == "Send SOS":
+            st.subheader("Kirim SOS")
+            if st.button("Kirim Sekarang"):
+                ok, msg = send_sos(st.session_state.email)
+                if ok:
+                    st.success(msg)
+                else:
+                    st.error(msg)
