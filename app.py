@@ -132,66 +132,48 @@ def generate_password(length=12):
 # --- Init DB ---
 init_db()
 
-# --- Gradient Background + Neon Theme ---
+# --- CSS Styling ---
 st.markdown("""
 <style>
 .stApp {
-    background: linear-gradient(120deg, #0f111a, #1a1c2c);
-    color: #fff;
-}
-.navbar {
-    display: flex;
-    background-color: #101123;
-    padding: 10px;
-    border-radius: 10px;
-    justify-content: space-around;
-    margin-bottom: 20px;
-}
-.navbar a {
-    color: #7DF9FF;
-    font-weight: bold;
-    text-decoration: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-}
-.navbar a:hover {
-    background-color: #1a1c2c;
+    background-color: #1a1a2e;
+    color: #ffffff;
 }
 .card {
-    background-color: #101123;
-    padding: 15px;
+    background-color: #212145;
+    padding: 20px;
     border-radius: 10px;
     margin-bottom: 20px;
 }
-.sos-button button {
+.neon-text {
+    color: #7DF9FF;
+    font-weight: bold;
+}
+.sos-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
     background-color: #FF3C3C;
     color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
     font-weight: bold;
-    padding: 10px 15px;
-    border-radius: 8px;
+    z-index: 999;
+}
+.sos-button:hover {
+    background-color: #FF1C1C;
 }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🧬 CamouGene : Gene Codes System for Emergency")
-
+# --- Session State ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.email = None
 
-# --- Navbar ---
-st.markdown("""
-<div class="navbar">
-    <a href="#encode">🧬 Encode/Decode DNA</a>
-    <a href="#qr">📷 QR Maker</a>
-    <a href="#sos">🚨 SOS Settings</a>
-    <a href="#configure">⚙️ Configure</a>
-    <a href="#send">📩 Send SOS</a>
-</div>
-""", unsafe_allow_html=True)
-
-# --- Sidebar for login/register ---
-menu = st.sidebar.radio("Menu", ["Login", "Register", "App"])
+# --- Sidebar Menu ---
+st.sidebar.title("🧬 CamouGene Menu")
+menu = st.sidebar.radio("Menu", ["Login", "Register", "Encode/Decode DNA", "QR Maker", "SOS Settings", "Configure"])
 
 # --- LOGIN ---
 if menu == "Login":
@@ -222,83 +204,77 @@ elif menu == "Register":
             st.error("Email sudah terdaftar!")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- APP ---
-elif menu == "App":
+# --- Protected Pages ---
+else:
     if not st.session_state.logged_in:
-        st.warning("Silakan login dulu untuk mengakses aplikasi!")
+        st.warning("Silakan login dulu untuk mengakses halaman ini!")
     else:
         st.sidebar.success(f"Logged in sebagai {st.session_state.email}")
-        if st.sidebar.button("Logout"):
-            st.session_state.logged_in = False
-            st.session_state.email = None
-            st.experimental_rerun()
 
-        # --- App Sections ---
-        # Encode / Decode DNA
-        st.markdown("### 🧬 Encode/Decode DNA <a name='encode'></a>", unsafe_allow_html=True)
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        teks = st.text_input("Masukkan teks atau DNA sequence:")
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Encode (Teks → DNA)"):
-                dna = text_to_dna(teks)
-                st.success(f"DNA: {dna}")
-        with col2:
-            if st.button("Decode (DNA → Teks)"):
-                try:
-                    decoded = dna_to_text(teks)
-                    st.success(f"Teks: {decoded}")
-                except:
-                    st.error("DNA tidak valid!")
-        st.markdown('</div>', unsafe_allow_html=True)
+        # --- Encode/Decode DNA ---
+        if menu == "Encode/Decode DNA":
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.subheader("🧬 Encode/Decode DNA")
+            teks = st.text_input("Masukkan teks atau DNA sequence:")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Encode (Teks → DNA)"):
+                    dna = text_to_dna(teks)
+                    st.success(f"DNA: {dna}")
+            with col2:
+                if st.button("Decode (DNA → Teks)"):
+                    try:
+                        decoded = dna_to_text(teks)
+                        st.success(f"Teks: {decoded}")
+                    except:
+                        st.error("DNA tidak valid!")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # QR Maker
-        st.markdown("### 📷 QR Maker <a name='qr'></a>", unsafe_allow_html=True)
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        teks_qr = st.text_input("Masukkan teks/password untuk QR:")
-        if st.button("Generate QR dari DNA + Lokasi"):
-            if teks_qr:
-                g = geocoder.ip('me')
-                lokasi = f"LAT:{g.latlng[0]},LON:{g.latlng[1]}" if g.ok else "LAT:0,LON:0"
-                full_text = f"{teks_qr} | {lokasi}"
-                dna = text_to_dna(full_text)
-                qr = qrcode.make(dna)
-                buf = BytesIO()
-                qr.save(buf, format="PNG")
-                st.image(buf.getvalue(), caption="QR Code", width=200)
-                st.download_button("Download QR", buf.getvalue(), file_name="dna_qr.png")
-        st.markdown('</div>', unsafe_allow_html=True)
+        # --- QR Maker ---
+        elif menu == "QR Maker":
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.subheader("📷 QR Maker")
+            teks_qr = st.text_input("Masukkan teks/password untuk QR:")
+            if st.button("Generate QR dari DNA + Lokasi"):
+                if teks_qr:
+                    g = geocoder.ip('me')
+                    lokasi = f"LAT:{g.latlng[0]},LON:{g.latlng[1]}" if g.ok else "LAT:0,LON:0"
+                    full_text = f"{teks_qr} | {lokasi}"
+                    dna = text_to_dna(full_text)
+                    qr = qrcode.make(dna)
+                    buf = BytesIO()
+                    qr.save(buf, format="PNG")
+                    st.image(buf.getvalue(), caption="QR Code", width=200)
+                    st.download_button("Download QR", buf.getvalue(), file_name="dna_qr.png")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # SOS Settings
-        st.markdown("### 🚨 SOS Settings <a name='sos'></a>", unsafe_allow_html=True)
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        current = get_sos_email(st.session_state.email)
-        st.info(f"Email SOS sekarang: {current if current else 'Belum diset'}")
-        sos_email = st.text_input("Masukkan email penerima SOS")
-        if st.button("Update Email SOS"):
-            update_sos_email(st.session_state.email, sos_email)
-            st.success("Email SOS berhasil diperbarui!")
-        st.markdown('</div>', unsafe_allow_html=True)
+        # --- SOS Settings ---
+        elif menu == "SOS Settings":
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.subheader("🚨 SOS Settings")
+            current = get_sos_email(st.session_state.email)
+            st.info(f"Email SOS sekarang: {current if current else 'Belum diset'}")
+            sos_email = st.text_input("Masukkan email penerima SOS")
+            if st.button("Update Email SOS"):
+                update_sos_email(st.session_state.email, sos_email)
+                st.success("Email SOS berhasil diperbarui!")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # Configure SMTP
-        st.markdown("### ⚙️ Configure <a name='configure'></a>", unsafe_allow_html=True)
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        smtp_server = st.text_input("SMTP Server (contoh: smtp.gmail.com)")
-        smtp_port = st.number_input("SMTP Port (contoh: 465)", value=465)
-        smtp_user = st.text_input("SMTP User (email pengirim)")
-        smtp_pass = st.text_input("SMTP App Password", type="password")
-        if st.button("Simpan Konfigurasi"):
-            update_smtp_config(st.session_state.email, smtp_server, smtp_port, smtp_user, smtp_pass)
-            st.success("Konfigurasi SMTP berhasil disimpan!")
-        st.markdown('</div>', unsafe_allow_html=True)
+        # --- Configure SMTP ---
+        elif menu == "Configure":
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.subheader("⚙️ Configure SMTP")
+            smtp_server = st.text_input("SMTP Server (contoh: smtp.gmail.com)")
+            smtp_port = st.number_input("SMTP Port (contoh: 465)", value=465)
+            smtp_user = st.text_input("SMTP User (email pengirim)")
+            smtp_pass = st.text_input("SMTP App Password", type="password")
+            if st.button("Simpan Konfigurasi"):
+                update_smtp_config(st.session_state.email, smtp_server, smtp_port, smtp_user, smtp_pass)
+                st.success("Konfigurasi SMTP berhasil disimpan!")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # Send SOS
-        st.markdown("### 📩 Send SOS <a name='send'></a>", unsafe_allow_html=True)
-        st.markdown('<div class="card sos-button">', unsafe_allow_html=True)
-        if st.button("🚨 KIRIM SOS SEKARANG"):
-            ok, msg = send_sos(st.session_state.email)
-            if ok:
-                st.success(msg)
-            else:
-                st.error(msg)
-        st.markdown('</div>', unsafe_allow_html=True)
+# --- Floating SOS Button ---
+if st.session_state.logged_in:
+    st.markdown("""
+    <a href="#send" class="sos-button">🚨 SOS</a>
+    """, unsafe_allow_html=True)
