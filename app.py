@@ -84,17 +84,36 @@ def send_sos(sender_email):
         return False, "Konfigurasi SOS atau SMTP belum lengkap!"
 
     try:
+        # 1. Buat pesan darurat + lokasi
+        g = geocoder.ip('me')
+        lokasi = f"LAT:{g.latlng[0]},LON:{g.latlng[1]}" if g.ok else "LAT:0,LON:0"
+        pesan = f"🚨 SOS! Saya membutuhkan bantuan segera! | {lokasi}"
+
+        # 2. Encode ke DNA
+        dna_pesan = text_to_dna(pesan)
+
+        # 3. Generate QR dari DNA
+        qr = qrcode.make(dna_pesan)
+        buf = BytesIO()
+        qr.save(buf, format="PNG")
+        buf.seek(0)
+
+        # 4. Buat email
         msg = EmailMessage()
         msg["Subject"] = "🚨 SOS Alert!"
         msg["From"] = smtp_user
         msg["To"] = sos_email
-        msg.set_content("Pesan darurat: Saya membutuhkan bantuan segera!")
+        msg.set_content(f"Pesan darurat:\n{pesan}\n\nDNA Encoded:\n{dna_pesan}")
 
+        # 5. Attach QR
+        msg.add_attachment(buf.getvalue(), maintype="image", subtype="png", filename="sos_qr.png")
+
+        # 6. Kirim via SMTP
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(smtp_user, smtp_pass)
             server.send_message(msg)
 
-        return True, f"SOS berhasil dikirim ke {sos_email}"
+        return True, f"SOS berhasil dikirim ke {sos_email} dengan QR darurat!"
     except Exception as e:
         return False, str(e)
 
@@ -243,4 +262,5 @@ if st.session_state.logged_in:
             st.success(msg)
         else:
             st.error(msg)
+
 
