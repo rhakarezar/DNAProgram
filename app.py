@@ -246,7 +246,7 @@ elif st.session_state.logged_in:
 
 # --- Floating SOS Button (Fix) ---
 if st.session_state.logged_in:
-    sos_clicked = st.button("🚨 SOS", key="sos_main")
+    sos_clicked = st.button("🚨 SOS", key="floating_sos_button")
     if sos_clicked:
         ok, msg = send_sos(st.session_state.email)
         if ok:
@@ -254,10 +254,10 @@ if st.session_state.logged_in:
         else:
             st.error(msg)
 
-    # CSS styling biar ngambang kanan bawah
+    # CSS styling hanya untuk tombol SOS
     st.markdown("""
         <style>
-        div[data-testid="stButton"] button[kind="secondary"] {
+        div[data-testid="stButton"][id*="floating_sos_button"] button {
             position: fixed;
             bottom: 30px;
             right: 30px;
@@ -270,6 +270,8 @@ if st.session_state.logged_in:
         }
         </style>
     """, unsafe_allow_html=True)
+
+
 
 
 
