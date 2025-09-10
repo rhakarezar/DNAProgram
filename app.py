@@ -244,17 +244,24 @@ elif st.session_state.logged_in:
             update_smtp_config(st.session_state.email, smtp_server, smtp_port, smtp_user, smtp_pass)
             st.success("Konfigurasi SMTP berhasil disimpan!")
 
-# --- Floating SOS Button (Fix) ---
+# --- Floating SOS Button ---
 if st.session_state.logged_in:
     sos_clicked = st.button("🚨 SOS", key="floating_sos_button")
     if sos_clicked:
-        ok, msg = send_sos(st.session_state.email)
-        if ok:
-            st.success(msg)
-        else:
-            st.error(msg)
+        ok, result = send_sos(st.session_state.email)
 
-    # CSS styling hanya untuk tombol SOS
+        if ok:
+            # kalau result berupa tuple (pesan, img)
+            if isinstance(result, tuple):
+                msg, img = result
+                st.success(msg)
+                st.image(img, caption="QR Darurat", use_column_width=True)
+            else:
+                st.success(result)
+        else:
+            st.error(result)
+
+    # CSS styling khusus SOS
     st.markdown("""
         <style>
         div[data-testid="stButton"][id*="floating_sos_button"] button {
@@ -270,6 +277,7 @@ if st.session_state.logged_in:
         }
         </style>
     """, unsafe_allow_html=True)
+
 
 
 
